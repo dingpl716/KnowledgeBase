@@ -10,7 +10,7 @@ Maven有三个标准的Lifecycles, 每个Lifecycle又有若干个预定义的Pha
     - Phase 4: `process-sources` -- Process the source code, for example, filter any value.
     - Phase 5: `generate-resources` -- Generate resources to be included in the package.
     - Phase 6: `process-resources` -- Copy and process the resources into the destination directory, ready for packaging phase.
-    - Phase 7: **`compile**` -- Compile the source code of the project.
+    - Phase 7: **`compile`** -- Compile the source code of the project.
     - Phase 8: `process-classes` -- Post-process the generated files from compilation, for example to do bytecode enhancement/optimization on Java classes.
     - Phase 9: `generate-test-sources` -- Generate any test source code to be included in compilation phase.
     - Phase 10: `process-test-sources` -- Process the test source code, for example, filter any values.
