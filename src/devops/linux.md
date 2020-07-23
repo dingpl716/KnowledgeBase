@@ -40,7 +40,7 @@ cat ~/.ssh/id_rsa.pub
 ### List the block devices attached to your instance
 ```
 lsblk
-``` 
+```
 
 ### List current disk usage.
 ```
