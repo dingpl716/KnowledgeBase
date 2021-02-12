@@ -123,6 +123,35 @@ $ docker run repo/imagename 3
 3
 ```
 
+#### -net host 选项
+
+`-net host` 选项可以将docker的网络端口一对一的map到host机器上，如果不指定这个选项，docker应该是默认没有网络访问能力的。比如在Jenkins上想运行一个docker image的话，就应该这样写：
+```bash
+# For Jenkins use, compile and test project
+jenkins-test:
+	@echo "Building and testing the project..."
+	@ls -al $(PWD)
+	@docker run --net host -v $(PWD):/mnt/home --rm docker.particlenews.com:5000/elixir:1.11.3 /bin/bash -c "cd /mnt/home && make test"
+```
+
+但是，在MacOS上，docker并不支持这个选项，所以我们明确的，显式的定义端口映射，比如：
+```bash
+docker run -d \
+--name website-nginx \
+-p 8326:8326 \
+-e FPM_HOST=host.docker.internal \
+registry2.nb.com/particle/nginx-dev:599e48e
+```
+
+或者直接映射所有端口：
+```bash
+docker run -d \
+--name website-nginx \
+-P \
+-e FPM_HOST=host.docker.internal \
+registry2.nb.com/particle/nginx-dev:599e48e
+```
+
 ### Best Practice
 
 1. One process a container.
