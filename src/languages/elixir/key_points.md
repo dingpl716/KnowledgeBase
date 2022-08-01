@@ -1,5 +1,33 @@
 ## Key points
 
+- `import v.s. require v.s. use`
+  - `require`, you can call a module's function by default, but you have to `require` that module before you can call macros defined in that module.
+  - `import`, after import a module, you can directly call it's function and macros without module name
+```elixir
+defmodule FunctionMaker do
+  defmacro create_multiplier(function_name, factor) do
+    quote do
+      def unquote(:"#{function_name}")(value) do
+        unquote(factor) * value
+      end
+    end
+  end
+end
+
+defmodule Multiply do
+  import FunctionMaker
+  create_multiplier("double", 2)
+  create_multiplier("triple", 3)
+end
+
+defmodule Multiply do
+  require FunctionMaker
+  FunctionMaker.create_multiplier("double", 2)
+  FunctionMaker.create_multiplier("triple", 3)
+end
+```
+
+
 - `.exs` file will not be compiled to disk, instead the compiled file will only be stored in memory.
 - Should use as less `case` as possible, we should push down such logic to function clause pattern match. In this way we can keep the "main" function focusing on the bare-bones.
 - Should use as many `Stream` as possible and as less `Enum` as possible. The `Enum` iterates the data too much, but `Stream` will do it in one pass.
