@@ -14,7 +14,7 @@
   - Client receive public key and verify it
   - Client generates a random number as the symmetric key, encrypts the symmetric key by using the public key and send back to server.
   - Server got the symmetric key and decrypts it by its private key.
-  - Server responds, saying I am read. Connection established
+  - Server responds, saying I am ready. Connection established
 - Client sends requests that are encrypted by the symmetric key.
 - Keep-alive.
 
@@ -37,7 +37,7 @@
 - Almost same as TLS 1.2, but only uses Diffie Hellman during hand-shake
 - Hand-shake (Only 1 round trip)
   - Client generates `Private Key 1` and `Public Key`
-  - Client sends the `Private Key 1` and `The bundle of Private Key 1 + Public Key` to the server.
+  - Client sends the `The bundle of Private Key 1 + Public Key` to the server.
   - The server generates the `Private Key 2` and calculates the `Symmetric Key` by combining the `Private Key 2` and `The bundle of Private Key 1 + Public Key` 
   - The server returns the `The bundle of Private Key 2 + Public Key` plus its certificate.
   - The client calculates the `Symmetric Key` by combining the `Private Key 1` and `The bundle of Private Key 2 + Public Key`
