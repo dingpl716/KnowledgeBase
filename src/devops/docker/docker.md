@@ -152,6 +152,33 @@ docker run -d \
 registry2.nb.com/particle/nginx-dev:599e48e
 ```
 
+### ARG 
+
+- 定义在`FROM`之前的`ARG`只能作用到`FROM`为止，如果之后还想用，必须在`FROM`之后再定义一次
+- `ARG`不能直接作用于`CMD`，但是可以通过`ENV`来绕过这个限制
+
+```dockerfile
+ARG TARGET_APP="default"
+FROM node:lts as builder
+ARG TARGET_APP
+WORKDIR /server
+COPY *.json .
+COPY *.lock .
+RUN yarn install
+COPY apps/${TARGET_APP} apps/${TARGET_APP}/
+RUN yarn build:${TARGET_APP}
+RUN npm prune --production
+FROM node:lts
+ARG TARGET_APP
+WORKDIR /server
+COPY --from=builder /server/dist dist/
+COPY --from=builder /server/node_modules node_modules/
+# Add an env to save ARG
+ENV APP_MAIN_FILE=dist/apps/${TARGET_APP}/main.js
+CMD node ${APP_MAIN_FILE}
+```
+
+
 ### Best Practice
 
 1. One process a container.

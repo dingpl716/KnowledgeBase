@@ -82,7 +82,7 @@ sudo containerd config default | sudo tee /etc/containerd/config.toml
       ...
   ```
 
-  Around line 112, change the value for `SystemCgroup` from `false` to `true`.
+  Around line 112, change the value for `SystemdCgroup` from `false` to `true`.
   ```
               SystemdCgroup = true
   ```
@@ -109,7 +109,7 @@ sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://pack
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-get install -y kubelet=1.25.4-00 kubeadm=1.25.4-00 kubectl=1.25.4-00
 sudo apt-mark hold kubelet kubeadm kubectl
 ```
 
@@ -156,4 +156,11 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 - On the Worker servers only, join them to the cluster using the command you copied earlier. 
 ```
 kubeadm join master_ip:6443 --token ... --discovery-token-ca-cert-hash ...
+```
+
+- If the token expired, you need to create a new token on master
+```shell
+kubeadm token generate
+
+kubeadm token create REPLACE_WITH_NEW_TOKEN --print-join-command
 ```

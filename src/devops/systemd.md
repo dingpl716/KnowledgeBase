@@ -11,6 +11,8 @@ Description=Forge Swap Service
 
 [Service]
 Type=simple
+User=deepak
+Group=admin
 ExecStart=/home/peding/forge-swap/_build/staging/rel/forge_swap/bin/forge_swap start
 ExecStop=/home/peding/forge-swap/_build/staging/rel/forge_swap/bin/forge_swap stop
 Environment=HOME=/home/peding/
@@ -51,6 +53,8 @@ Type：定义启动时的进程行为。它有以下几种值。
      Type=dbus：当前服务通过D-Bus启动
      Type=notify：当前服务启动完毕，会通知Systemd，再继续往下执行
      Type=idle：若有其他任务执行完毕，当前服务才会运行
+User=deepak
+Group=admin
 ExecStart：启动当前服务的命令
 ExecStartPre：启动当前服务之前执行的命令
 ExecStartPost：启动当前服务之后执行的命令
