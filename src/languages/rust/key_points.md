@@ -10,7 +10,7 @@
 - `char`: 32bit long 
 - The expression `&x` produces a reference to `x`; in Rust terminology, we say that it **borrows** a reference to x.
 
-### Arrays, Slice and Vector
+## Arrays, Slice and Vector
   ```rust
   let v: Vec<f64> = vec![0.0,  0.707,  1.0,  0.707];
   let a: [f64; 4] =     [0.0, -0.707, -1.0, -0.707];
@@ -67,7 +67,7 @@
   [1, 2, 3, 9]
   ```
 - Slices
-  - Denoted as `[T]`, it is a region of an array of a vector. 
+  - Denoted as `[T]`, it is a region of an array or a vector. 
   - Since a slice can be any length, slices can’t be stored directly in variables or passed as function arguments. Slices are **always passed by reference**. 
   - Slice reference is a *fat pointer*, a two-word value comprising the first element of the slice and the number of elements in the slice.
   - Both `[T; N]` and `Vec<T>` can be implicitly converted to `[T]`
@@ -99,131 +99,17 @@ let poodles: &str = "ಠ_ಠ";
 - `String`
   - `String`是一个struct, 并且这个struct拥有一个`Vec<u8>`的字段。同样，这个vector也是well-formed UTF-8.
 
-
-### Ownership, Move
-
-- 把一个指针赋值给另一个变量，实际上是让渡了所有权
-```rust
-let data: Vec<u32> = vec![1, 2, 3, 4];
-let data1: Vec<u32> = data; // 创建一个新的指针data1，并且让它指向data所指向的内存。
-```
-  在这个例子中，`data`是一个指针，指向堆上的vector. 当`data`被赋给`data1`后，所有权也进行了让渡，此时再访问`data`就会出错。
-
-- 调用`our_print`函数会让渡所有权，因为它要求的入参是Vec<T>
-```rust
-fn our_print<T>(Vec<T>) {
-    println!()
-}
-``` 
-
-- `println!()`, `format!()` 不会让渡所有权，因为其内部实现实际上是借了一个引用过去
-
-
-### Reference, Borrow
-
-- The `&` mark "borrows" a reference pointing to a piece of data. It actually create a new pointer pointing to the data.
-
-#### Reference, Borrow原则
-- 情况一：在同一时间内，一个数据可以有**多个只读的引用**，引用的作用范围可以有交叉
-- 情况二：在同一作用域内，如果有可变的引用，那么首先不能有其他**只读**的引用了，并且多个可变引用的**活跃时间不能有交叉**。
-
-##### Example 1
-- 编译错误, error[E0502]: cannot borrow `data` as immutable because it is also borrowed as mutable
-- 因为在第一次可变引用的作用范围内，你不能再借第二次
-```rust
-fn main() {
-    let mut data: Vec<u32> = vec![1, 2, 3, 4];
-    let data1: &mut Vec<u32> = &mut data; // 第一个引用，可变
-    
-    data1.push(5); // 第一个引用，可变
-    println!("{:?}", data); // 第二个引用，不可变
-    
-    data1.push(6); // 第一个引用，可变
-}
-```
-
-##### Example 2
-- 编译错误, cannot borrow `data` as mutable more than once at a time
-- 因为第一次和第二次有交叉
-```rust
-fn main() {
-    let mut data: Vec<u32> = vec![1, 2, 3, 4];
-    let data1: &mut Vec<u32> = &mut data; // 第一个引用，可变
-    
-    data1.push(5); // 第一个引用，可变
-    println!("{:?}", data1); // 第一个引用，可变
-    
-    data.push(6); // 第二个引用，可变
-    println!("{:?}", data1);  // 第一个引用，可变
-}
-```
-
-##### Example 3
-- 无编译错误
-- 第一次输出`[1, 2, 3, 4, 5]`
-- 第二次输出`[1, 2, 3, 4, 5, 6]`
-```rust
-    let mut data: Vec<u32> = vec![1, 2, 3, 4];
-    let data1: &mut Vec<u32> = &mut data; // 第一个引用，可变
-    
-    data1.push(5); // 第一个引用，可变
-    println!("{:?}", data1); // 第一个引用，可变
-    
-    data.push(6); // 第二个引用，可变
-    println!("{:?}", data);  // 第二个引用，可变
-```
-
-##### Example 4
-- 无编译错误
-- 一次输出`[1, 2, 3, 4, 5]`
-- 第二次输出`[1, 2, 3, 4, 5, 6]`
-- 第三次输出`[1, 2, 3, 4, 5, 6， 7]`
-```rust
-    let mut data: Vec<u32> = vec![1, 2, 3, 4];
-    let data1: &mut Vec<u32> = &mut data; // 第一个引用，可变
-
-    data1.push(5); // 第一个引用，可变
-    println!("{:?}", data1); // 第一个引用，可变
-
-    data.push(6); // 第二个引用，可变
-    println!("{:?}", data); // 第二个引用，可变
-
-    data.push(7); // 第二个引用，可变
-    println!("{:?}", data); // 第二个引用，可变
-```
-
-##### Example 5
-- 编译错误，error[E0499]: cannot borrow `data` as mutable more than once at a time
-- 第一次第二次有交叉
-```rust
-    let mut data: Vec<u32> = vec![1, 2, 3, 4];
-    let data1: &mut Vec<u32> = &mut data; // 第一个引用，可变
-
-    data1.push(5); // 第一个引用，可变
-    println!("{:?}", data1); // 第一个引用，可变
-
-    data.push(6); // 第二个引用，可变
-    println!("{:?}", data); // 第二个引用，可变
-
-    data1.push(7); // 第一个引用，可变
-```
-
-### Rc (Reference counter), RefCell
-
-
-### Arc (Atomic reference counter)
-
-### Atomic Types
+## Atomic Types
 [Official Document](https://doc.rust-lang.org/std/sync/atomic/index.html)
 
-### Lifetime
+## Lifetime
 
 Principles:
 - 所有引用类型的参数都有独立的生命周期 'a 、'b 等。
 - 如果只有一个引用型输入，它的生命周期会赋给所有输出。
 - 如果有多个引用类型的参数，其中一个是 self，那么它的生命周期会赋给所有输出。
 
-#### Example 1
+### Example 1
 ```rust
 // 该函数将会按delimiter将输入的字符串分开，返回前面一段的同时，让原指针指向后面的一段。
 pub fn strtok<'a, 'b>(s: &'b mut &'a str, delimiter: char) -> &'a str {
@@ -335,7 +221,7 @@ mod tests {
 }
 ```
 
-#### Example 2
+### Example 2
 ```rust
 // 错误，因为name指向的字符串会在函数结束时被drop掉
 fn lifetime1() -> &str {
