@@ -306,6 +306,32 @@ where
 
 ## Questions:
 - why sometimes we have to do `self.0 = img`, but sometimes we don't
-- Difference between `Vec<T>` and `&Vec<T>`, when should use which?
-  - When the function parameter is type `Vec<T>`, then ownership of the vector will move after you pass it to this function.
-  - When the function parameter is type `Vec<T>` (immutable reference), then ownership remains to the vector after you pass its reference to this function.
+- When match a Enum, what's the difference between Self and &Self
+  ```rust
+  match self {
+            &Self::InitializeMint {
+                ref mint_authority: &Pubkey,
+                ref freeze_authority: &COption<Pubkey>,
+                decimals: u8,
+            } => {
+                buf.push(0);
+                buf.push(decimals);
+                buf.extend_from_slice(mint_authority.as_ref());
+                Self::pack_pubkey_option(freeze_authority, &mut buf);
+            }
+            &Self::InitializeAccount2 { owner: Pubkey } => {
+                buf.push(16);
+                buf.extend_from_slice(owner.as_ref());
+            }
+            Self::SetAuthority {
+                authority_type: &AuthorityType,
+                ref new_authority &COption<Pubkey>,
+            } => {
+                buf.push(6);
+                buf.push(authority_type.into());
+                Self::pack_pubkey_option(new_authority, &mut buf);
+            }
+            Self::InitializeAccount => buf.push(1),
+
+  }
+  ```
