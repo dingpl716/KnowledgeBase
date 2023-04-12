@@ -1,17 +1,23 @@
-## Docker
+# Docker·
 
-### 基本概念
+## 基本概念
 
-- 一个OS由两部分组成：1）最最基础的OS内核，2）在这个内核上添加一些软件和库。最终成为一个OS的发型版本
+- 一个OS由两部分组成：
+  1. 最最基础的OS内核
+  2. 在这个内核上添加一些软件和库。最终成为一个OS的发型版本
 - 在Docker里，我们从一个OS的内核开始，然后添加我们想要的软件和库，最后形成一个image。
 - 所以一个image和HOST OS的关系可以理解为
   - HOST OS = HOST OS Kernel + Additional Software/libs installed on HOST OS
   - image = HOST OS Kernel + Additional Software/libs installed on image
 - 正因为image和HOST OS都使用一个内核，所以在Linux上只能跑Linux的image，而Mac和Windows无法直接运行Linux image，除非在Mac和Windows上先安装一个Linux虚拟机，然后再在其之上运行image。
 
-### Build Docker Image
+## Build Docker Image
 
-#### 一个Dockerfile的例子
+- 在Dockerfile里面的每一行命令都会产生一个Layer。
+- 每一个Layer都是只读的，它们会被缓存起来，在build不同image时我们会重用这些Layer，已达到加速的目的。
+- 测试例子参见[Layer  Caching Test](./LayerCachingTest/README.md)
+
+### 一个Dockerfile的例子
 
 ```dockerfile
 # 指定从哪个image作为基础来build
@@ -35,7 +41,8 @@ RUN chmod a+rx /opt/driver-did-abt/docker/run-driver-did-abt.sh
 # 指定image的默认启动命令
 CMD "/opt/driver-did-abt/docker/run-driver-did-abt.sh"
 ```
-#### Build命令
+
+### Build命令
 
 执行如下命令来build这个docker image
 
@@ -48,15 +55,72 @@ docker build -f ./docker/Dockerfile -t arcblock/driver-did-abt --build-arg GITHU
 - `--build-arg` 用来为变量赋值
 - `.` 表示以当前目录作为基准build path
 
-#### 概念
+### ARG 
 
-- 在Dockerfile里面的每一行命令都会产生一个Layer。
-- 每一个Layer都是只读的，它们会被缓存起来，在build不同image时我们会重用这些Layer，已达到加速的目的。
-- 测试例子参见[Layer  Caching Test](./LayerCachingTest/README.md)
+- 定义在`FROM`之前的`ARG`只能作用到`FROM`为止，如果之后还想用，必须在`FROM`之后再定义一次
+- `ARG`不能直接作用于`CMD`，但是可以通过`ENV`来绕过这个限制
 
-### Run Docker Image
+```dockerfile
+ARG TARGET_APP="default"
+FROM node:lts as builder
+ARG TARGET_APP
+WORKDIR /server
+COPY *.json .
+COPY *.lock .
+RUN yarn install
+COPY apps/${TARGET_APP} apps/${TARGET_APP}/
+RUN yarn build:${TARGET_APP}
+RUN npm prune --production
+FROM node:lts
+ARG TARGET_APP
+WORKDIR /server
+COPY --from=builder /server/dist dist/
+COPY --from=builder /server/node_modules node_modules/
+# Add an env to save ARG
+ENV APP_MAIN_FILE=dist/apps/${TARGET_APP}/main.js
+CMD node ${APP_MAIN_FILE}
+```
 
-#### 基础用法
+### SSH, Secret
+- 如果想要在 Docker build 期间使用 SSH 或 secrets，比如用 ssh 从 Github 上抓取 private repo，那么可以用 docker 的 `--ssh` 和 `--secrete` feature.
+- 想要使用这两个 feature 需要首先设置环境变量 `export DOCKER_BUILDKIT=1`
+
+#### Secret
+- Dockerfile 里面在需要使用 secrete 的 RUN 命令后面加上 `--mount=type=secret`
+```dockerfile
+RUN --mount=type=secret,id=mysite.key command-to-run
+```
+- 指定 secrete 的 id 和 src
+```bash
+docker build --secret id=mysite.key,src=path/to/mysite.key .
+```
+
+#### SSH
+- 这种方法很安全，当某个需要 ssh 的命令访问远方的服务器时，它会让host来签名，这样private key就根本不会离开 host 
+```dockerfile
+RUN mkdir -p -m 0600 ~/.ssh && \
+    ssh-keyscan github.com >> ~/.ssh/known_hosts
+RUN --mount=type=ssh go mod tidy
+```
+
+```shell
+DOCKER_BUILDKIT=1 docker build -t msp --ssh default=$(HOME)/.ssh/id_rsa .
+```
+
+- 一次用多个key
+```dockerfile
+RUN --mount=type=ssh,id=project1 git clone project1 …
+RUN --mount=type=ssh,id=project2 git clone project2 …
+```
+
+```shell
+docker build --ssh project1=./project1.pem --ssh project2=./project2.pem
+```
+
+
+## Run Docker Image
+
+### 基础用法
 
 `docker run --rm -p 8080:8081 -v $(pwd)/src:/usr/src/app -e ENV=value jim-example`
 
@@ -74,56 +138,7 @@ docker build -f ./docker/Dockerfile -t arcblock/driver-did-abt --build-arg GITHU
 
 - 将conatiner运行在后台。
 
-#### CMD & Entrypoint
-
-##### Case 1: CMD做为默认运行命令
-
-```dockerfile
-CMD "/opt/driver-did-abt/docker/run-driver-did-abt.sh"
-```
-
-在这种模式下，运行image的时候会默认执行这个`.sh`脚本
-
-##### Case 2: CMD作为默认运行命令，并带参数
-
-```dockerfile
-CMD ["echo", "5"]
-```
-
-在这种模式下，运行image会直接打印出5。注意，这种模式必须使用Json格式，不能写成`"echo 5"`，因为这样会让docker把整个字符串作为一个命令来看待。
-
-##### Case 3: Entrypoint作为默认运行命令
-
-```dockerfile
-ENTRYPOINT "echo"
-# OR ENTRYPOINT ["echo"]
-```
-
-这种模式可以让我们在运行image时，省去输入需要运行的命令，但是必须传入一个参数
-
-```
-docker run repo/imagename 5
-```
-
-##### Case 4: Entrypoint作为默认运行命令, CMD作为参数默认值
-
-```dockerfile
-ENTRYPOINT ["echo"]
-CMD ["5"]
-```
-必须使用JSON格式。这种模式可以让我们在运行image时，省去输入需要运行的命令，并提供默认值
-
-```bash
-$ docker run repo/imagename
-5
-```
-
-```bash
-$ docker run repo/imagename 3
-3
-```
-
-#### -net host 选项
+### -net host 选项
 
 `-net host` 选项可以将docker的网络端口一对一的map到host机器上，如果不指定这个选项，docker应该是默认没有网络访问能力的。比如在Jenkins上想运行一个docker image的话，就应该这样写：
 ```bash
@@ -152,34 +167,67 @@ docker run -d \
 registry2.nb.com/particle/nginx-dev:599e48e
 ```
 
-### ARG 
 
-- 定义在`FROM`之前的`ARG`只能作用到`FROM`为止，如果之后还想用，必须在`FROM`之后再定义一次
-- `ARG`不能直接作用于`CMD`，但是可以通过`ENV`来绕过这个限制
+## CMD & Entrypoint
+
+### Case 1: CMD做为默认运行命令
 
 ```dockerfile
-ARG TARGET_APP="default"
-FROM node:lts as builder
-ARG TARGET_APP
-WORKDIR /server
-COPY *.json .
-COPY *.lock .
-RUN yarn install
-COPY apps/${TARGET_APP} apps/${TARGET_APP}/
-RUN yarn build:${TARGET_APP}
-RUN npm prune --production
-FROM node:lts
-ARG TARGET_APP
-WORKDIR /server
-COPY --from=builder /server/dist dist/
-COPY --from=builder /server/node_modules node_modules/
-# Add an env to save ARG
-ENV APP_MAIN_FILE=dist/apps/${TARGET_APP}/main.js
-CMD node ${APP_MAIN_FILE}
+CMD "/opt/driver-did-abt/docker/run-driver-did-abt.sh"
+```
+
+在这种模式下，运行image的时候会默认执行这个`.sh`脚本
+
+### Case 2: CMD作为默认运行命令，并带参数
+
+```dockerfile
+CMD ["echo", "5"]
+```
+
+在这种模式下，运行image会直接打印出5。注意，这种模式必须使用Json格式，不能写成`"echo 5"`，因为这样会让docker把整个字符串作为一个命令来看待。
+
+### Case 3: Entrypoint作为默认运行命令
+
+```dockerfile
+ENTRYPOINT "echo"
+# OR ENTRYPOINT ["echo"]
+```
+
+这种模式可以让我们在运行image时，省去输入需要运行的命令，但是必须传入一个参数
+
+```
+docker run repo/imagename 5
+```
+
+### Case 4: Entrypoint作为默认运行命令, CMD作为参数默认值
+
+```dockerfile
+ENTRYPOINT ["echo"]
+CMD ["5"]
+```
+必须使用JSON格式。这种模式可以让我们在运行image时，省去输入需要运行的命令，并提供默认值
+
+```bash
+$ docker run repo/imagename
+5
+```
+
+```bash
+$ docker run repo/imagename 3
+3
 ```
 
 
-### Best Practice
+
+
+## 清理
+
+```
+docker system prune
+```
+
+
+## Best Practice
 
 1. One process a container.
     - 更好维护
