@@ -203,7 +203,7 @@ pub trait AsMut<T> where T: ?Sized {
 ```
 
 - AsRef 是把我的引用转换成任意类型的引用
-- AsMust 是把我的可变引用转换成任意类型的可变引用
+- AsMut 是把我的可变引用转换成任意类型的可变引用
 
 ### Deref / DerefMut
 
