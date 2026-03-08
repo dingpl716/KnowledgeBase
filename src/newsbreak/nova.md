@@ -1,0 +1,17 @@
+Q:
+- ad-server
+  - recall 
+    - ageGroup:!2 
+    - from where recall -> redis
+    - adset filter, in memory?
+  - sorting
+    - where does ecpm come from? model?
+    - pCtrExponent?
+  - 1st stage ranking
+    - what nb serving returned -> user embedding 
+    - where ad embedding come from
+    - what is calcualted in ad server
+  - 
+- charge-server
+- snapshot-server
+- 
